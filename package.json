@@ -1,0 +1,15 @@
+{
+  "name": "bilibili-article-crawler",
+  "version": "1.0.0",
+  "description": "Crawl Bilibili user articles filtered by keyword",
+  "type": "module",
+  "main": "crawler.js",
+  "scripts": {
+    "start": "node crawler.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.5"
+  }
+}
