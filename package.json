@@ -1,15 +1,24 @@
 {
   "name": "bilibili-article-crawler",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Crawl Bilibili user articles filtered by keyword",
   "type": "module",
-  "main": "crawler.js",
+  "main": "dist/crawler.js",
   "scripts": {
-    "start": "node crawler.js"
+    "build": "tsc",
+    "start": "node dist/crawler.js",
+    "dev": "tsx src/crawler.ts",
+    "clean": "tsx src/clean.ts",
+    "crawl": "tsx src/crawler.ts && tsx src/clean.ts"
   },
   "dependencies": {
     "axios": "^1.7.2",
     "cheerio": "^1.0.0",
     "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
   }
 }

@@ -1,27 +1,25 @@
 /**
- * Write article content to a .txt file with a metadata header.
+ * 将文章内容写入 .txt 文件，带元数据头。
  */
 
 import fs from 'fs/promises';
 import path from 'path';
 import { sanitizeFilename } from './utils.js';
+import type { ArticleData } from './types.js';
 
 const OUTPUT_DIR = path.resolve(process.cwd(), 'output');
 
 /**
- * Ensure the output directory exists.
+ * 确保输出目录存在。
  */
-export async function ensureOutputDir() {
+export async function ensureOutputDir(): Promise<void> {
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
 }
 
 /**
- * Check whether an article file already exists in the output directory.
- *
- * @param {{ cvid: number, title: string }} article
- * @returns {boolean} true if the file already exists
+ * 检查文章文件是否已存在于输出目录中。
  */
-export async function articleExists({ cvid, title }) {
+export async function articleExists({ cvid, title }: Pick<ArticleData, 'cvid' | 'title'>): Promise<boolean> {
   const safeTitle = sanitizeFilename(title);
   const filename = `${safeTitle}_cv${cvid}.txt`;
   const filepath = path.join(OUTPUT_DIR, filename);
@@ -34,11 +32,9 @@ export async function articleExists({ cvid, title }) {
 }
 
 /**
- * Write a single article to a .txt file.
- *
- * @param {{ cvid: number, title: string, content: string }} article
+ * 将单篇文章写入 .txt 文件。
  */
-export async function writeArticle({ cvid, title, content }) {
+export async function writeArticle({ cvid, title, content }: ArticleData): Promise<string> {
   await ensureOutputDir();
 
   const safeTitle = sanitizeFilename(title);

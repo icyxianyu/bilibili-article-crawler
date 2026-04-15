@@ -1,11 +1,11 @@
 /**
- * HTML parser for Bilibili article pages.
- * Extracts plain text content from the article body.
+ * B站专栏文章 HTML 解析器（备用）。
+ * 从文章页面 HTML 中提取纯文本正文。
  */
 
 import * as cheerio from 'cheerio';
 
-// Ordered list of CSS selectors to try
+// 按优先级尝试的 CSS 选择器列表
 const SELECTORS = [
   '#read-article-holder',
   '.article-holder',
@@ -15,13 +15,10 @@ const SELECTORS = [
 ];
 
 /**
- * Parse plain-text body from a Bilibili article HTML page.
- * Falls back to __INITIAL_STATE__ JSON if DOM selectors fail.
- *
- * @param {string} html
- * @returns {string} plain text content, or empty string if nothing found
+ * 从 B站文章 HTML 页面中解析纯文本正文。
+ * 如果 DOM 选择器都失败，回退到 __INITIAL_STATE__ JSON 提取。
  */
-export function parseArticleContent(html) {
+export function parseArticleContent(html: string): string {
   const $ = cheerio.load(html);
 
   for (const selector of SELECTORS) {
@@ -34,21 +31,21 @@ export function parseArticleContent(html) {
     }
   }
 
-  // Fallback: extract from window.__INITIAL_STATE__
+  // 回退：从 window.__INITIAL_STATE__ 中提取
   const stateText = extractInitialState(html);
   if (stateText) return stateText;
 
   return '';
 }
 
-function extractInitialState(html) {
+function extractInitialState(html: string): string {
   const match = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});?\s*(?:\(function|<\/script>)/);
   if (!match) return '';
 
   try {
     const state = JSON.parse(match[1]);
-    // Try multiple known paths
-    const content =
+    // 尝试多个已知路径
+    const content: string =
       state?.readInfo?.content ??
       state?.articleInfo?.content ??
       state?.article?.content ??
@@ -56,7 +53,7 @@ function extractInitialState(html) {
 
     if (!content) return '';
 
-    // content is an HTML string; parse with cheerio to get plain text
+    // content 是 HTML 字符串，用 cheerio 解析为纯文本
     const $ = cheerio.load(content);
     return $('body').text().trim();
   } catch {

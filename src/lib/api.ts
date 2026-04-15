@@ -1,13 +1,14 @@
 /**
- * Bilibili API layer
- *   - fetchArticleList: paginated article list for a user
- *   - fetchArticleContent: article plain-text content via API
+ * B站 API 请求层
+ *   - fetchArticleList: 分页获取用户文章列表
+ *   - fetchArticleContent: 通过 API 获取文章正文
  *
- * Reads BILIBILI_COOKIE from .env (or environment variable) for authenticated requests.
+ * 从 .env 中读取 BILIBILI_COOKIE 用于携带登录态请求。
  */
 
 import 'dotenv/config';
 import axios from 'axios';
+import type { ArticleListResult } from './types.js';
 
 const LIST_API = 'https://api.bilibili.com/x/space/article';
 const ARTICLE_API = 'https://api.bilibili.com/x/article/view';
@@ -16,13 +17,13 @@ const PAGE_SIZE = 20;
 const COOKIE = process.env.BILIBILI_COOKIE?.trim() || '';
 
 if (COOKIE) {
-  console.log('[CONFIG] BILIBILI_COOKIE loaded ✔');
+  console.log('[CONFIG] BILIBILI_COOKIE 已加载 ✔');
 } else {
-  console.log('[CONFIG] BILIBILI_COOKIE not set — requests are anonymous (higher risk of -352)');
+  console.log('[CONFIG] BILIBILI_COOKIE 未设置 — 以匿名身份请求（更容易触发 -352 风控）');
 }
 
-// ── Build headers that closely match a real Chrome browser session ──────────
-const browserHeaders = {
+// ── 构造与真实 Chrome 浏览器一致的请求头 ────────────────────────────────────
+const browserHeaders: Record<string, string> = {
   'User-Agent':
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
   Accept: 'application/json, text/plain, */*',
@@ -45,49 +46,48 @@ const httpClient = axios.create({
 });
 
 /**
- * Fetch one page of articles for a user.
- * @param {string|number} mid  - Bilibili UID
- * @param {number} pn          - page number (1-based)
- * @returns {{ articles: Array<{id:number, title:string}>, total: number }}
+ * 获取用户文章列表的一页。
  */
-export async function fetchArticleList(mid, pn = 1) {
+export async function fetchArticleList(mid: string | number, pn = 1): Promise<ArticleListResult> {
   const { data } = await httpClient.get(LIST_API, {
     params: { mid, pn, ps: PAGE_SIZE, sort: 'publish_time' },
   });
 
   if (data.code !== 0) {
-    throw new Error(`API error ${data.code}: ${data.message}`);
+    throw new Error(`API 错误 ${data.code}: ${data.message}`);
   }
 
-  const articles = (data.data?.articles ?? []).map((a) => ({
+  const articles = (data.data?.articles ?? []).map((a: { id: number; title: string }) => ({
     id: a.id,
     title: a.title,
   }));
 
-  const total = data.data?.count ?? 0;
+  const total: number = data.data?.count ?? 0;
   return { articles, total };
 }
 
 /**
- * Fetch article content via Bilibili API (returns plain text directly).
- * @param {number} cvid
- * @returns {string} plain text content
+ * 通过 B站 API 获取文章正文内容。
  */
-export async function fetchArticleContent(cvid) {
+export async function fetchArticleContent(cvid: number): Promise<string> {
   const { data } = await httpClient.get(ARTICLE_API, {
     params: { id: cvid },
   });
 
   if (data.code !== 0) {
-    throw new Error(`API error ${data.code}: ${data.message}`);
+    throw new Error(`API 错误 ${data.code}: ${data.message}`);
   }
 
-  // Prefer data.content (plain text); fallback to opus paragraphs
-  const content = data.data?.content;
+  // 优先使用 data.content（纯文本）；回退到 opus 结构化段落
+  const content: string | undefined = data.data?.content;
   if (content) return content;
 
-  // Fallback: extract text from opus structured paragraphs
-  const paragraphs = data.data?.opus?.content?.paragraphs;
+  // 回退：从 opus 结构化段落中提取文本
+  const paragraphs: Array<{
+    para_type: number;
+    text?: { nodes?: Array<{ word?: { words?: string } }> };
+  }> | undefined = data.data?.opus?.content?.paragraphs;
+
   if (paragraphs && paragraphs.length > 0) {
     return paragraphs
       .filter((p) => p.para_type === 1 || p.para_type === 4)
